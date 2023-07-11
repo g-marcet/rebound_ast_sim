@@ -69,7 +69,7 @@ def test_point(x, y, vertices):
 
 totaldays = 8978
 surveys = [["CATALINA", 0.19, 0.36, 0.06], ["E12", 0.26, 0.42, 0.], ["F51", 0., 0.27, 0.2], ["G96", 0.56, 0.18, 0.], ["LINEAR", 0.19, 0.45, 0.], ["LONEOS", 0., 0.47, 0.], ["NEAT", 0., 0.25, 0.3], ["SPACEWATCH", 0., 0.17, 0.39], ["WISE", 0., 0.32, 0.78]]
-cat = pd.read_csv('neopop.cat', skiprows=5, sep='\s+', usecols=['!Name', 'H'])
+cat = pd.read_csv('../neopop.cat', skiprows=5, sep='\s+', usecols=['!Name', 'H'])
 ast = np.genfromtxt('ast.txt', dtype = 'str')
 cat = cat[cat['!Name'].isin(ast)]
 for a in cat['!Name']:
