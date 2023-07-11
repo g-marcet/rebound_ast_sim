@@ -17,7 +17,7 @@ def filter(V,V0, U, c0, c1, c2):
     etaV = max(int(V<V0), ((1-((V-V0)/qv)**2)/(1+np.exp((V-Vm)/delV))))
     etaU = 1/(1+np.exp((Um-U)/delU))
     etaTL = min(1, c0 + c1/(U-c2))
-
+    print(V)
     eta = eta0*etaTL*etaU*etaV
     print('------------------------------------------probabilities (trailing loss, velocity, mag, total)--------------------------------------------')
     print(etaTL)
@@ -67,6 +67,7 @@ def test_point(x, y, vertices):
     all_right = all(is_right)
     return all_left or all_right    
 
+first = False
 totaldays = 8978
 surveys = [["CATALINA", 0.19, 0.36, 0.06], ["E12", 0.26, 0.42, 0.], ["F51", 0., 0.27, 0.2], ["G96", 0.56, 0.18, 0.], ["LINEAR", 0.19, 0.45, 0.], ["LONEOS", 0., 0.47, 0.], ["NEAT", 0., 0.25, 0.3], ["SPACEWATCH", 0., 0.17, 0.39], ["WISE", 0., 0.32, 0.78]]
 cat = pd.read_csv('../neopop.cat', skiprows=5, sep='\s+', usecols=['!Name', 'H'])
@@ -87,17 +88,38 @@ for y in range(1998, 2024):
                 s += 1
         if s == 9:
             d +=1
+            first = True
             day += 1
             continue
         print('{}{:03d}'.format(y, d))
+        if first:
+            temp = ''
+            path = "out/day%d.dat" %(day-1)
+            with open(path, 'r') as ad:
+                line_numbers = [*range(9, N+9)]
+                for i, line in enumerate(ad):
+                    if i == 2:
+                        temp += line.strip() + '\n'
+                    if i in line_numbers:
+                        if (ast[(i-9)] in cat['!Name'].values):
+                            temp += line.strip()+'\n'
+                    elif i > line_numbers[-1]:
+                        break
+            temp = np.genfromtxt(StringIO(temp))
+            temp += -temp[0]
+            dist = np.sqrt(np.diag(np.matmul(temp[1:,:3],np.transpose(temp[1:,:3]))))
+            olddec = np.arcsin(np.divide(temp[1:,2], dist))*(180/math.pi)
+            oldRA = []
+            for i in range(len(dist)):
+                if np.divide(temp[i+1,1], dist[i]) > 0:
+                    oldRA.append(np.arccos(np.divide(np.divide(temp[i+1,0], dist[i]), np.cos(olddec[i]*(math.pi/180))))*(180/math.pi))
+                else:
+                    oldRA.append(360-np.arccos(np.divide(np.divide(temp[i+1,0], dist[i]), np.cos(olddec[i]*(math.pi/180))))*(180/math.pi))
+            cat['oldRA'] = oldRA
+            cat['olddec'] = olddec
+            first = False
+                
         temp = ''
-        '''with open("vEARTHMOON.dat", 'r') as ad:
-            line_numbers = [day+4]
-            for i, line in enumerate(ad):
-                if i in line_numbers:
-                    temp += line.strip()+'\n'
-                elif i > line_numbers[-1]:
-                    break'''
         path = "out/day%d.dat" %(day)
         with open(path, 'r') as ad:
             line_numbers = [*range(9, N+9)]
