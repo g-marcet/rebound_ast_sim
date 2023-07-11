@@ -17,10 +17,11 @@
 
 #define FILENAME_SIZE 64
 #define MAX_LINE 256
-#define AST_NUM 10
+#define AST_NUM 10000
 
 
-
+int sample = 0;
+int day = 0;
 
 void heartbeat(struct reb_simulation* r);
 
@@ -30,7 +31,7 @@ int main(int argc, char* argv[]){
     r->dt           = 0.5/365.25*2.*M_PI;        // 0.5 days
     r->heartbeat    = heartbeat;
     r->N_active     = r->N;
-    r->ri_ias15.min_dt       = 0.01;
+    r->ri_ias15.min_dt       = 0.01/365.25*2.*M_PI;
 
     // Read Synthetic Population
     FILE *fp;
@@ -62,17 +63,27 @@ int main(int argc, char* argv[]){
         reb_add(r, p);
     }
     fclose(fp);
-
     reb_move_to_com(r);
-    reb_integrate(r, 365.25*2.*M_PI);
+    reb_integrate(r, 25*2.*M_PI);
+    printf("%d", sample);
+
 }
 
 void heartbeat(struct reb_simulation* r){
-    printf("%f\n",r->t);
-    if (reb_output_check(r, 1.00)){
-        printf("yee XD");
-        char* file = "testoutput.txt";
+    //printf("%f\n",r->t);
+    if (reb_output_check(r, 1.00/365.25*2.*M_PI)){
+        sample ++;
+        //printf("yee XD");
+        char file[30];
+        sprintf(file, "out/day%d.dat", day);
+        printf(file);
+        printf("\n");
         reb_output_ascii(r, file);
+        day ++;
+        FILE* out;
+        out = fopen(file, "a");
+        fprintf(out, "%f\n", r->t);
+        fclose(out);
         
     }
 }
