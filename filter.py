@@ -42,11 +42,13 @@ def intersect(x0, y0, x1, y1, vertices):
         y00 = y0
         x01 = (x1-x0)
         y01 = (y1-y0)
-        x10 = vertices[2*i]
-        y10 = vertices[2*i+1]
-        x11 = vertices[(2*(i+1))%8] - x10
-        y11 = vertices[(2*(i+1)+1)%8] - y10
+        x10, y10 = vertices[i]
+        x11, y11 = vertices[(i+1)%4]
+        x11 = x11 - x10
+        y11 = y11 - y10
         d = x11*y01 - x01 * y11
+        if d == 0:
+            return False
         s0 = ((1/d)*((x00 - x10) * y01 - (y00 - y10) * x01)) < 1
         s1 = ((1/d)*((x00 - x10) * y01 - (y00 - y10) * x01)) > 0
         t0 = ((1/d)*(-(-(x00 - x10)* y11 + (y00 - y10)* x11))) < 1
@@ -67,12 +69,12 @@ def test_point(x, y, vertices):
 
 totaldays = 8978
 surveys = [["CATALINA", 0.19, 0.36, 0.06], ["E12", 0.26, 0.42, 0.], ["F51", 0., 0.27, 0.2], ["G96", 0.56, 0.18, 0.], ["LINEAR", 0.19, 0.45, 0.], ["LONEOS", 0., 0.47, 0.], ["NEAT", 0., 0.25, 0.3], ["SPACEWATCH", 0., 0.17, 0.39], ["WISE", 0., 0.32, 0.78]]
-cat = pd.read_csv('../neopop.cat', skiprows=5, sep='\s+', usecols=['!Name', 'H'])
+cat = pd.read_csv('neopop.cat', skiprows=5, sep='\s+', usecols=['!Name', 'H'])
 ast = np.genfromtxt('ast.txt', dtype = 'str')
 cat = cat[cat['!Name'].isin(ast)]
 for a in cat['!Name']:
     cat.replace(a, a.replace("'",""))
-N = 50
+N = 10000
 day = 0
 d = 212
 for y in range(1998, 2024):
@@ -89,18 +91,21 @@ for y in range(1998, 2024):
             continue
         print('{}{:03d}'.format(y, d))
         temp = ''
-        with open("vEARTHMOON.dat", 'r') as ad:
+        '''with open("vEARTHMOON.dat", 'r') as ad:
             line_numbers = [day+4]
             for i, line in enumerate(ad):
                 if i in line_numbers:
                     temp += line.strip()+'\n'
                 elif i > line_numbers[-1]:
-                    break
-        with open("vall.dat", 'r') as ad:
-            line_numbers = [*range(12+(N+1)*day, 11+(N+1)*(day+1))]
+                    break'''
+        path = "out/day%d.dat" %(day)
+        with open(path, 'r') as ad:
+            line_numbers = [*range(9, N+9)]
             for i, line in enumerate(ad):
+                if i == 2:
+                    temp += line.strip() + '\n'
                 if i in line_numbers:
-                    if (ast[(i-12)%(N)] in cat['!Name'].values):
+                    if (ast[(i-9)] in cat['!Name'].values):
                         temp += line.strip()+'\n'
                 elif i > line_numbers[-1]:
                     break
@@ -121,6 +126,9 @@ for y in range(1998, 2024):
         cat['U'] = vel
         cat['RA'] = RA
         cat['dec'] = dec
+        if day == 0:
+            cat['oldRA'] = cat['RA']
+            cat['olddec'] = cat['dec']
 
 
         cat = cat.reset_index(drop = True)
@@ -135,7 +143,7 @@ for y in range(1998, 2024):
                     V0 = skycov[-1]
                     skycov = [(skycov[2*i], skycov[2*i+1]) for i in range(4)]
                     for i in cat:
-                        if test_point(cat[i]['RA'], cat[i]['dec'], skycov):
+                        if intersect(cat[i]['oldRA'],cat[i]['olddec'] ,cat[i]['RA'], cat[i]['dec'], skycov):
                             print(cat[i]['!Name'])
                             if filter(cat[i]['V'], V0, cat[i]['U'], survey[1], survey[2], survey[3]):
                                 cat.pop(i)
@@ -144,7 +152,7 @@ for y in range(1998, 2024):
                 V0 = skydat[-1]
                 skydat = [(skydat[2*i], skydat[2*i+1]) for i in range(4)]
                 for i in cat:
-                    if test_point(cat[i]['RA'], cat[i]['dec'], skycov):
+                    if intersect(cat[i]['oldRA'],cat[i]['olddec'] ,cat[i]['RA'], cat[i]['dec'], skycov):
                         print(cat[i]['!Name'])
                         if filter(cat[i]['V'], V0, cat[i]['U'], survey[1], survey[2], survey[3]):
                             cat.pop(i)
@@ -153,6 +161,8 @@ for y in range(1998, 2024):
         cat = cat.T
         day += 1
         d += 1
+        cat['oldRA'] = cat['RA']
+        cat['olddec'] = cat['dec']
         if day == totaldays:
             break
     if day == totaldays:
